@@ -21,46 +21,27 @@ The format is
 `Device	Trip	Time	AccelPedal	Altitude	AvailableLeft	AvailableRight	Ax	Ay	BoundaryLeft	BoundaryRight	Brake	CruiseEngaged	Distance	GpsHeading	Latitude	Longitude	NumTargets	Range	RangeRate	Speed	TurnSignal	YawRate`
 
 Some explainations for these data:
+
+|Data|Type|Unit|Explaination|
 |----|----|----|----|
 |Time|Long Integer|csec|Time in centiseconds since das started|
-|----|----|----|----|
 |AccelPedal|Single Float|%|Accelerator pedal|
-|----|----|----|----|
 |Altitude|Single Float|m|Height above the ellipsoid|
-|----|----|----|----|
 |AvailableLeft|Byte|none|MobilEye left LDW availability|
-|----|----|----|----|
 |AvailableRight|Byte|none|MobilEye right LDW availability|
-|----|----|----|----|
 |Ax|Single Float|m/sec2|Longitudinal accel from Conti IMU|
-|----|----|----|----|
 |Ay|Single Float|m/sec2|Lateral accel from Conti IMU|
-|----|----|----|----|
 |BoundaryLeft|Byte|none|MobilEye left lane type|
-|----|----|----|----|
 |BoundaryRight|Byte|none|MobilEye right lane type|
-|----|----|----|----|
 |Brake|Byte|none|Brake light active|
-|----|----|----|----|
 |CruiseEngaged|Byte|none|Cruise control active|
-|----|----|----|----|
 |Distance|Single Float|m|Trip distance|
-|----|----|----|----|
 |GpsHeading|Single Float|deg|Gps heading from Ublox Gps|
-|----|----|----|----|
 |Latitude|Double Float|deg|Latitude from Ublox Gps|
-|----|----|----|----|
 |Longitude|Double Float|deg|Longitude from Ublox Gps|
-|----|----|----|----|
 |NumTargets|Byte|none|MobilEye number of obstacles|
-|----|----|----|----|
 |Range|Single Float|m|MobilEye Object 1 longitudinal position relative to the reference point.|
-|----|----|----|----|
 |RangeRate|Single Float|m/sec|MobilEye relative longitudinal velocity of object1|
-|----|----|----|----|
 |Speed|Single Float|m/sec|Vehicle speed from transmission|
-|----|----|----|----|
 |TurnSignal|Byte|none|Turn signal|
-|----|----|----|----|
 |YawRate|Single Float|deg/sec|Yawrate from Conti IMU|
-|----|----|----|----|
