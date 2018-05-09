@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Secure data query</title>
+    <style>
+       #map {
+        height: 400px;
+        width: 100%;
+       }
+    </style>
+</head>
+<body>
+<h1>Secure data query</h1>
+    <form action="/query-new-data" method="post">
+        {% csrf_token %}
+        <p>Query: <input type="text" name="q">
+        <input type="submit" value="Submit"><br>
+        <br>
+        Basic protection:
+        <br>
+        <input type="radio" value="1" name="selected_method"/>AES 
+        <input type="radio" value="2" name="selected_method"/>Base64
+        <input type="radio" value="3" name="selected_method"/>k-Anonymity
+        <br>
+        <br>
+        Infomation Leakage Quantification:
+        <br>
+        <input type="radio" value ="1" name="selected_results" title="To identify a specific driver using only driving data"/>Fingerprinting
+        <input type="radio" value ="2" name="selected_results" title="To estimate Top Locations using collected locations"/>Top Location Inference
+        <!--<input type="radio" value ="3" name="selected_results" title="To calculate correlation among different sensor values"/>Correlation-->
+        <br>
+        <br> Against Fingerprinting Attacks <br>
+        <input type="radio" value="3" name="selected_method"/>Differential Privacy
+        <input type="text" name="eps">
+        <input type="radio" value="5" name="selected_method"/>Frequently-Changing Pseudonym (Five segments)
+        <br>
+        <br> Against Location Inference Attacks <br>
+        <input type="radio" value="6" name="selected_method"/>Two-End
+        <input type="radio" value="4" name="selected_method"/>Context-Aware
+        <!--<input type="text" name="radius">-->
+    </form>
+ 
+    <p>
+      <table border="1">
+	{% for row in fingerprint %}
+          <tr>
+          {% for col in row %}
+           <td>{{col}}</td>
+          {% endfor %}
+          </tr>
+        {% endfor %}
+      </table>
+        <br>
+        
+        
+        {% if clusters.result_twoend %}
+        <table border="1">
+            <tr>
+                <td>% of data removal</td><td>5%</td><td>10%</td><td>15%</td><td>20%</td><td>25%</td><td>30%</td>
+                </tr>
+                <tr>
+                    <td>Inference error (m) </td>
+                    {% for col in clusters.result_twoend %}
+                    <td>{{col}}</td>
+                    {% endfor %}
+                </tr>
+        </table>
+        {% endif %}
+
+        {% if clusters.result_context %}
+        <table border="1">
+            <tr>
+                <td>Distance of protection(m)</td><td>500</td><td>1000</td><td>1500</td><td>2000</td><td>2500</td><td>3000</td>
+                </tr>
+                <tr>
+                <td>% of data remaining</td>
+                {% for col in clusters.result_context_loss %}
+                <td>{{col}}</td>
+                {% endfor %}
+                </tr>
+                <tr>
+                    <td>Inference error (m) </td>
+                    {% for col in clusters.result_context %}
+                    <td>{{col}}</td>
+                    {% endfor %}
+                </tr>
+        </table>
+        {% endif %}
+
+        {% if clusters.result_daily_infer %}
+        <table border="1">
+          <tr>
+         <td>Avg. distance to real Top Locations(m)</td>
+          </tr>
+            <tr>
+                <td>{{clusters.result_daily_infer}}</td>
+            </tr>
+        </table>
+        {% endif %}
+        
+        <!--Hide it because no use in demo-->
+        {% if 1 == 0 %}
+        <table border="1">
+          <tr>
+            
+            <td>Inferred Top Locations</td><td>Distance to real Top Locations(m)</td>
+            
+          </tr>
+           {% for cluster in clusters.clusters%}
+            <tr>
+                <td>{{cluster.lat}}, {{cluster.lon}}</td><td>{{cluster.dis}}</td>
+            </tr>
+          {% endfor %} 
+        </table>
+        <div id="map"></div>
+        {% endif %}
+        <br>
+
+        <table border="1">
+          {% for row in corr %}
+          <tr>
+            {% for col in row %}
+            <td>{{col}}</td>
+            {% endfor %}
+          </tr>
+          {% endfor %}
+        </table>
+        
+       <h3>Queried Data</h3>
+         <table border="1">
+         <!-- <tr>
+                 <td>Device</td><td>Trip</td><td>Time</td><td>AccelPedal</td><td>Altitude</td><td>AvailableLeft</td><td>AvailableRight</td><td>Ax</td><td>Ay</td><td>BoundaryLeft</td><td>BoundaryRight</td><td>Brake</td><td>CruiseEngaged</td><td>Distance </td><td>GpsHeading </td><td>Latitude </td><td> Longitude </td><td>NumTargets </td><td>Range</td><td> RangeRate </td><td>Speed </td><td>TurnSignal </td><td> YawRate</td>
+             </tr>
+           -->
+           {% for row in rlt %}
+             <tr>
+                 {% for col in row%}
+                 <td>{{ col }}</td>
+                 {% endfor %}
+             </tr>
+           {% endfor %}
+        </table>
+    </p>
+
+<script>
+    function initMap() {
+        var uluru = {lat: 42.3239, lng: -83.638978};
+        var map = new google.maps.Map(document.getElementById('map'), {
+          zoom: 12,
+          center: uluru
+        });
+        var icon = {
+            url: 'http://www.klicktours.com/assets/admin/img/icon/destination-icon.png', // url
+            scaledSize: new google.maps.Size(50,50), // scaled size
+            origin: new google.maps.Point(0,0), // origin
+            anchor: new google.maps.Point(0,0) // anchor
+        };
+        var marker = new google.maps.Marker({
+            position: {lat: 42.2990, lng: -83.717},
+            label: "Real Top Location",
+            icon: icon,
+            map: map
+        });
+        cnt = 1;
+        {% for row in clusters.clusters %}
+          var marker = new google.maps.Marker({
+            position: {lat: {{row.lat}}, lng: {{row.lon}}},
+            label: "Inferred Top Location " + cnt,
+            map: map
+          });
+         cnt = cnt + 1;
+       {% endfor %}
+        loccnt = 0; 
+        {% for row in clusters.locations %}
+         if (loccnt==0){
+           var marker = new google.maps.Marker({
+              position: {lat: {{row.0}}, lng: {{row.1}}},
+              map: map,
+              label: "Start"
+           });
+        }
+         if (loccnt%10==0){
+           var infowindow = new google.maps.InfoWindow({
+              content: String(loccnt)
+           });
+           var marker = new google.maps.Marker({
+              position: {lat: {{row.0}}, lng: {{row.1}}},
+              map: map
+           });
+        google.maps.event.addListener(marker,'click', (function(marker,content,infowindow){ 
+          return function() {
+              infowindow.setContent(content);
+              infowindow.open(map,marker);
+          };
+        })(marker,String(loccnt)+','+String({{row.0}})+','+String({{row.1}}),infowindow));
+        }
+        loccnt = loccnt + 1;
+       {% endfor %}
+      }
+    </script>
+    <script async defer
+    src="https://maps.googleapis.com/maps/api/js?key=AIzaSyA5W0D56yhqAsdRMyoFWRyx_zSQ2pNjkzs&callback=initMap">
+    </script>
+
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.8.3/jquery.min.js"></script>
+</body>
+</html>

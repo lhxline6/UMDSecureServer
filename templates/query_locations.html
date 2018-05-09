@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Secure data query</title>
+</head>
+<body>
+    <form action="/query-locations" method="post">
+        {% csrf_token %}
+        <input type="text" name="q">
+        <input type="submit" value="Submit"><br>
+        <input type="radio" value ="1" name="selected_method"/>AES 
+        <input type="radio" value ="2" name="selected_method"/>Base64
+        <input type="radio" value ="3" name="selected_method"/>Differential Privacy
+        <input type="text" name="eps">
+    </form>
+ 
+    <p>
+        <table border="1">
+             {% for row in rlt %}
+             <tr>
+                 {% for col in row%}
+                 <td>{{ col }}</td>
+                 {% endfor %}
+             </tr>
+             {% endfor %}
+        </table>
+    </p>
+</body>
+</html>

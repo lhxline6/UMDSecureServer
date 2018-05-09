@@ -1,0 +1,110 @@
+from django.shortcuts import render
+from django.views.decorators import csrf
+import MySQLdb
+
+def query_data(request):
+    ctx ={}
+    if request.POST:
+        q = request.POST['q']
+        if q == 'anonymizer personal_information':
+            from secureserver import anonymizer
+            data, i = anonymizer.read_adult()
+            ctx['rlt'] = anonymizer.get_result_one(data,INTUITIVE_ORDER=i)
+            #print type(res),type(res[0])
+            #for i in range(len(res)):
+            #    res[i] = ','.join(res[i])
+            #ctx['rlt'] = '\n'.join(res)
+            return render(request, "query.html", ctx)
+        ratioList = request.POST.getlist("selected_method")
+        if not ratioList or len(ratioList) == 0:
+            checkedRatio = 0
+        else:
+            checkedRatio = int(ratioList[0])
+        if checkedRatio == 3: #number 3 means DF
+            #q = str(q).strip().split(' ')
+            eps = float(request.POST['eps'])
+            #q = ' '.join(q[2:])
+            db = MySQLdb.connect("localhost","root","root","secureserver" )
+            cursor = db.cursor()
+            cursor.execute(q)
+            ctx['rlt'] = list(cursor.fetchall())
+            maxVal = max(ctx['rlt'])
+            minVal = min(ctx['rlt'])
+            from numpy.random import laplace
+            for i in range(len(ctx['rlt'])):
+                ctx['rlt'][i] = list(ctx['rlt'][i])
+                ctx['rlt'][i][0] += laplace(0, float(maxVal[0]-minVal[0])/eps)
+            return render(request, "query.html", ctx)
+            pass
+        elif checkedRatio == 2: #number 2 means Base64
+            #q = q.lstrip('base64')
+            db = MySQLdb.connect("localhost","root","root","secureserver" )
+            cursor = db.cursor()
+            cursor.execute(q)
+            ctx['rlt'] = list(cursor.fetchall())
+            import base64
+            for i in range(len(ctx['rlt'])):
+                ctx['rlt'][i] = list(ctx['rlt'][i])
+                for j in range(len(ctx['rlt'][i])):
+                    ctx['rlt'][i][j] = base64.encodestring(str(ctx['rlt'][i][j]))
+            return render(request, "query.html", ctx)
+        elif checkedRatio == 1: #number 1 means AES
+            from Crypto.Cipher import AES
+            from binascii import b2a_hex, a2b_hex
+            #q = q.lstrip('AES ')
+            obj = AES.new('This is a key123', AES.MODE_CBC, 'This is an IV456')
+            db = MySQLdb.connect("localhost","root","root","secureserver")
+            cursor = db.cursor()
+            cursor.execute(q)
+            ctx['rlt'] = list(cursor.fetchall())
+            for i in range(len(ctx['rlt'])):
+                ctx['rlt'][i] = list(ctx['rlt'][i])
+                for j in range(len(ctx['rlt'][i])):
+                    valStr = str(ctx['rlt'][i][j])
+                    count = len(valStr)
+                    add = 16 - (count % 16)
+                    valStr = valStr + (' ' * add)
+                    ctx['rlt'][i][j] = b2a_hex(obj.encrypt(valStr))
+            return render(request, "query.html", ctx)
+        db = MySQLdb.connect("localhost","root","root","secureserver" )
+        cursor = db.cursor()
+        cursor.execute(q)
+        ctx['rlt'] = cursor.fetchall()
+        #ctx['rlt'] = type(checkedRatio)
+    return render(request, "query.html", ctx)
+
+
+
+def query_locations(request):
+    ctx ={}
+    if request.POST:
+        q = request.POST['q']
+        import pandas as pd, numpy as np, matplotlib.pyplot as plt, time
+        from sklearn.cluster import DBSCAN
+        from sklearn import metrics
+        from geopy.distance import great_circle
+        from shapely.geometry import MultiPoint
+        kms_per_radian = 6371.0088
+        #pro_info = pd.DataFrame(cursor.fetchall())
+        db = MySQLdb.connect("localhost","root","root","secureserver")
+        cursor = db.cursor()
+        cursor.execute(q)
+        columns = cursor.description
+        result = [{columns[index][0]:column for index, column in enumerate(value)} for value in cursor.fetchall()]
+        #ctx['rlt'] = [result[0].keys()]
+        #return render(request, "query_locations.html", ctx)
+        df = pd.DataFrame(result)
+        #coords = df.ix[:,[15,16]]
+        coords = df.as_matrix(columns=['Latitude','Longtitude'])
+        epsilon = 0.1 / kms_per_radian
+        db = DBSCAN(eps=epsilon, min_samples=1, algorithm='ball_tree', metric='haversine').fit(np.radians(coords))
+	cluster_labels = db.labels_
+        num_clusters = len(set(cluster_labels))
+        clusters = pd.Series([coords[cluster_labels==n] for n in range(num_clusters)])
+        def get_centermost_point(cluster):
+            centroid = (MultiPoint(cluster).centroid.x, MultiPoint(cluster).centroid.y)
+            centermost_point = min(cluster, key=lambda point: great_circle(point, centroid).m)
+            return tuple(centermost_point)
+        centermost_points = clusters.map(get_centermost_point)
+        ctx['rlt'] = centermost_points
+    return render(request, "query_locations.html", ctx)

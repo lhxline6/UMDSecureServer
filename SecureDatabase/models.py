@@ -1,0 +1,27 @@
+from django.db import models
+
+# Create your models here.
+class drivingdata(models.Model):
+    Device = models.IntegerField()
+    Trip = models.IntegerField()
+    Time = models.IntegerField()
+    AccelPedal = models.FloatField()
+    Altitude = models.FloatField()
+    AvailableLeft = models.FloatField()
+    AvailableRight = models.FloatField()
+    Ax = models.FloatField()
+    Ay = models.FloatField()
+    BoundryLeft = models.FloatField()
+    BoundryRight = models.FloatField()
+    Brake = models.FloatField()
+    CruiseEngaged = models.IntegerField()
+    Distance = models.FloatField()
+    GPSHeading = models.FloatField()
+    Latitude = models.FloatField()
+    Longtitude = models.FloatField()
+    NumTarget = models.FloatField()
+    Range1 = models.FloatField()
+    RangeRate = models.FloatField()
+    Speed = models.FloatField()
+    TurnSignal = models.IntegerField()
+    YawRate = models.FloatField()
